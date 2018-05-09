@@ -25,16 +25,22 @@ def verify_users(user_name, user_policies):
     sys.exit(1)
 
 
-def create_nacl_entry(egress, nacl_id, ec2_client):
+def create_nacl_entry(egress, nacl_id, rule_number):
   return ec2_client.create_network_acl_entry(
     CidrBlock='0.0.0.0/0',
     Egress=egress,
     Protocol='-1',
     RuleAction='deny',
-    RuleNumber=1,
+    RuleNumber=rule_number,
     NetworkAclId=nacl_id
   )
 
+def delete_nacl_entry(egress, nacl_id, rule_number):
+  return ec2_client.delete_network_acl_entry(
+    Egress=egress,
+    RuleNumber=rule_number,
+    NetworkAclId=nacl_id
+  )
 
 def create_deny_policy():
   return iam_client.create_policy(
@@ -65,6 +71,28 @@ def attach_role_policy(role_name, policy_arn):
   )
 
 
+def detach_user_policy(user_name, policy_arn):
+  return iam_client.detach_user_policy(
+    UserName=user_name,
+    PolicyArn=policy_arn
+  )
+
+
+def detatch_group_policy(group_name, policy_arn):
+  return iam_client.detach_group_policy(
+    GroupName=group_name,
+    PolicyArn=policy_arn
+  )
+
+
+def detach_role_policy(role_name, policy_arn):
+  return iam_client.detach_role_policy(
+    RoleName=role_name,
+    PolicyArn=policy_arn
+  )
+
+
+
 
 print("Verify current user has Administrator privileges.")
 user_name = iam_client.get_user()['User']['UserName']
@@ -76,8 +104,8 @@ if (len(sys.argv) == 1):
   print("\n\n1. Network Access Control List Deny:")
   nacls = ec2_client.describe_network_acls()['NetworkAcls']
   for nacl in nacls:
-    nacl_logs.append(create_nacl_entry(True, nacl['NetworkAclId'], ec2_client))
-    nacl_logs.append(create_nacl_entry(False, nacl['NetworkAclId'], ec2_client))
+    nacl_logs.append(create_nacl_entry(True, nacl['NetworkAclId'], 1))
+    nacl_logs.append(create_nacl_entry(False, nacl['NetworkAclId'], 2))
   for log in nacl_logs:
     print('Updating NACLs: ' + str(log))
 
@@ -133,19 +161,11 @@ elif (sys.argv[1] == "revert"):
   nacls = ec2_client.describe_network_acls()['NetworkAcls']
   for nacl in nacls:
     try:
-      nacl_logs.append(ec2_client.delete_network_acl_entry(
-        Egress=True,
-        RuleNumber=1,
-        NetworkAclId=nacl['NetworkAclId']
-      ))
+      nacl_logs.append(delete_nacl_entry(True, nacl['NetworkAclId'], 1))
     except Exception as err:
       print(err)
     try:
-      nacl_logs.append(ec2_client.delete_network_acl_entry(
-        Egress=False,
-        RuleNumber=2,
-        NetworkAclId=nacl['NetworkAclId']
-      ))
+      nacl_logs.append(delete_nacl_entry(False, nacl['NetworkAclId'], 2))
     except Exception as err:
       print(err)
   for log in nacl_logs:
@@ -158,27 +178,18 @@ elif (sys.argv[1] == "revert"):
   print("Deny policy ARN: " + deny_policy_arn)
   for user in users:
     try:
-      policy_logs.append(iam_client.detach_user_policy(
-        UserName=user['UserName'],
-        PolicyArn=deny_policy_arn
-      ))
+      policy_logs.append(detach_user_policy(user['UserName'], deny_policy_arn))
     except Exception as err:
       print(err)
   for group in groups:
     try:
-      policy_logs.append(iam_client.detach_group_policy(
-        GroupName=group['GroupName'],
-        PolicyArn=deny_policy_arn
-      ))
+      policy_logs.append(detach_group_policy(group['GroupName'], deny_policy_arn))
     except Exception as err:
       print(err)
   for role in roles:
     if role['RoleName'] != 'AWSServiceRoleForOrganizations':
       try:
-        policy_logs.append(iam_client.detach_role_policy(
-          RoleName=role['RoleName'],
-          PolicyArn=deny_policy_arn
-        ))
+        policy_logs.append(detach_role_policy(role['RoleName'], deny_policy_arn))
       except Exception as err:
         print(err)
   for log in policy_logs:
