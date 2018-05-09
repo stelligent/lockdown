@@ -8,17 +8,18 @@ prefered response.
 
 `lockdown.py` will take the following actions upon execution.  AWS default profile must be set to
 account name 'root'.  If executing in an AWS Organizations sub-account, first make a user with name
-'root' and add Administrative privileges to user.  All other users will be stripped of permissions.
-Only the root user and the AWS Organizations role, if existing, will remain.
+'root' and add Administrative privileges to user.  All other users and roles will be stripped.
+Only the root user and the AWS Organizations role, if existing, will remain unmodified.
 
 ### 1. cut off all network access to all subnets
   - security group rules are zeroed out
   - acls are applied to prevent any and all traffic
 
-### 2. deactivates all iam users and deletes roles
-  - deactivates all iam user accounts
-  - deletes all iam roles, which could be used for cross-account access, or as part of a future event,
-      such as a cron'd lambda or scheduled datapipeline
+### 2. deactivate all iam users and roles
+  - deactivates all iam users and groups, by removing all permissions
+  - deactivates all iam roles, by purging all policies, and attaching default deny all to each role
+      -  this mitigates attacks such as persistant sts sessions, cross-account access,
+         or as part of a future event, such as a cron'd lambda or scheduled datapipeline event.
 
 ### 3. ebs snapshot all instances
   - all instance volumes are snapshotted for any future forensics
