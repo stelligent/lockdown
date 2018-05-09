@@ -14,77 +14,98 @@ nacl_logs = []
 policy_logs = []
 
 
+def verify_users(user_name, user_policies):
+  for policy in user_policies:
+    if policy['PolicyName'] == "AdministratorAccess":
+      user_admin = True
+  if user_admin:
+    print("Current aws profile user keys are valid.  continuing.")
+  else:
+    print("In order to run this code, please add the AdministratorAccess managed IAM policy to your current user.")
+    sys.exit(1)
+
+
+def create_nacl_entry(egress, nacl_id, ec2_client):
+  return ec2_client.create_network_acl_entry(
+    CidrBlock='0.0.0.0/0',
+    Egress=egress,
+    Protocol='-1',
+    RuleAction='deny',
+    RuleNumber=1,
+    NetworkAclId=nacl_id
+  )
+
+
+def create_deny_policy():
+  return iam_client.create_policy(
+    PolicyName='LockdownDenyAll',
+    Description='Lockdown Deny All',
+    PolicyDocument='{"Version":"2012-10-17","Statement":[{"Sid":"LockdownDenyAll","Effect":"Deny","Action":"*","Resource":"*"}]}'
+  )['Policy']
+
+
+def attach_user_policy(user_name, policy_arn):
+  return iam_client.attach_user_policy(
+    UserName=user_name,
+    PolicyArn=policy_arn
+  )
+
+
+def attach_group_policy(group_name, policy_arn):
+  return iam_client.attach_group_policy(
+    GroupName=group_name,
+    PolicyArn=policy_arn
+  )
+
+
+def attach_role_policy(role_name, policy_arn):
+  return iam_client.attach_role_policy(
+    RoleName=role_name,
+    PolicyArn=policy_arn
+  )
+
+
+
 print("Verify current user has Administrator privileges.")
 user_name = iam_client.get_user()['User']['UserName']
 user_policies = iam_client.list_attached_user_policies(UserName=user_name)['AttachedPolicies']
-for policy in user_policies:
-  if policy['PolicyName'] == "AdministratorAccess":
-    user_admin = True
-if user_admin:
-  print("current aws profile user keys are valid.  continuing.")
-else:
-  print("In order to run this code, please add the AdministratorAccess managed IAM policy to your current user.")
-  sys.exit(1)
-
-
-
+verify_users(user_name,user_policies)
 
 if (len(sys.argv) == 1):
 
   print("\n\n1. Network Access Control List Deny:")
   nacls = ec2_client.describe_network_acls()['NetworkAcls']
   for nacl in nacls:
-    nacl_logs.append(ec2_client.create_network_acl_entry(
-      CidrBlock='0.0.0.0/0',
-      Egress=True,
-      Protocol='-1',
-      RuleAction='deny',
-      RuleNumber=1,
-      NetworkAclId=nacl['NetworkAclId']
-    ))
-    nacl_logs.append(ec2_client.create_network_acl_entry(
-      CidrBlock='0.0.0.0/0',
-      Egress=False,
-      Protocol='-1',
-      RuleAction='deny',
-      RuleNumber=2,
-      NetworkAclId=nacl['NetworkAclId']
-    ))
+    nacl_logs.append(create_nacl_entry(True, nacl['NetworkAclId'], ec2_client))
+    nacl_logs.append(create_nacl_entry(False, nacl['NetworkAclId'], ec2_client))
   for log in nacl_logs:
     print('Updating NACLs: ' + str(log))
 
 
 
   print("\n\n2. Lockdown IAM Users, Groups, and Roles")
-  deny_policy = iam_client.create_policy(
-    PolicyName='LockdownDenyAll',
-    Description='Lockdown Deny All',
-    PolicyDocument='{"Version":"2012-10-17","Statement":[{"Sid":"LockdownDenyAll","Effect":"Deny","Action":"*","Resource":"*"}]}'
-  )['Policy']
+  deny_policy = create_deny_policy()
   print('Create LockdownDenyAll Policy: ' + str(deny_policy))
 
   for user in users:
     if user['UserName'] != user_name:
       try:
-        policy_logs.append(iam_client.attach_user_policy(
-          UserName=user['UserName'],
-          PolicyArn=deny_policy['Arn']
-        ))
+        policy_logs.append(attach_user_policy(user['UserName'], deny_policy['Arn']))
       except Exception as err:
         print(err)
 
   for group in groups:
-    policy_logs.append(iam_client.attach_group_policy(
-      GroupName=group['GroupName'],
-      PolicyArn=deny_policy['Arn']
-    ))
+    try:
+      policy_logs.append(attach_group_policy(group['GroupName'], deny_policy['Arn']))
+    except Exception as err:
+      print(err)
 
   for role in roles:
     if role['RoleName'] != 'AWSServiceRoleForOrganizations':
-      policy_logs.append(iam_client.attach_role_policy(
-        RoleName=role['RoleName'],
-        PolicyArn=deny_policy['Arn']
-      ))
+      try:
+        policy_logs.append(attach_role_policy(role['RoleName'], deny_policy['Arn']))
+      except Exception as err:
+        print(err)
 
   for log in policy_logs:
     print("Policy Attachment: " + str(log))
@@ -173,3 +194,7 @@ elif (sys.argv[1] == "revert"):
 
   print("3. Unlock S3.")
   print("  - Remove deny public access policy applied to s3 buckets is removes")
+
+
+
+
