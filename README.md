@@ -1,7 +1,7 @@
 # AWS Emergency Compromise Response
 
 This tool `lockdown.py` is to be used in the event of aws compromise.  Unfortunately,
-frequently we see developers commit aws keys to GitHub, and this typically results in many rouge
+frequently we see developers commit aws keys to GitHub, and this typically results in many rogue
 instances spun up for cryptomining and other purposes.  Other times, instances themselves may be
 compromised. In both cases, account lockdown, while preserving as much data as possible, is the
 preferred response.
