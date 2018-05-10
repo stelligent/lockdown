@@ -1,5 +1,14 @@
 import sys
 
+def check_aws_roles(role_name):
+  if (
+    role_name != 'AWSServiceRoleForOrganizations' and
+    role_name != 'AWSServiceRoleForAutoScaling'
+  ):
+    return true
+  else:
+    return false
+
 def verify_admin_user(iam_client, user_name):
   print("Verify current user has Administrator privileges.")
   user_policies = iam_client.list_attached_user_policies(UserName=user_name)['AttachedPolicies']
@@ -21,8 +30,8 @@ def verify_admin_user(iam_client, user_name):
     sys.exit(1)
 
 
-def get_policy_arn(account_id):
-  return 'arn:aws:iam::' + account_id + ':policy/LockdownDenyAll'
+def get_policy_arn(account_id, policy_name):
+  return 'arn:aws:iam::' + account_id + ':policy/' + policy_name
 
 
 def save_logs(logs, logs_name):
@@ -49,14 +58,18 @@ def delete_nacl_entry(ec2_client, egress, nacl_id, rule_number):
   )
 
 
-def create_deny_policy(iam_client):
-  deny_policy = iam_client.create_policy(
-    PolicyName='LockdownDenyAll',
-    Description='Lockdown Deny All',
-    PolicyDocument='{"Version":"2012-10-17","Statement":[{"Sid":"LockdownDenyAll","Effect":"Deny","Action":"*","Resource":"*"}]}'
-  )['Policy']
-  print('Create LockdownDenyAll Policy: ' + str(deny_policy))
-  return deny_policy
+def create_deny_policy(iam_client, account_id, policy_name):
+  try:
+    deny_policy = iam_client.create_policy(
+      PolicyName=policy_name,
+      Description=policy_name,
+      PolicyDocument='{"Version":"2012-10-17","Statement":[{"Sid":"' + policy_name + '","Effect":"Deny","Action":"*","Resource":"*"}]}'
+    )['Policy']
+    return deny_policy
+  except Exception as err:
+    deny_policy = {}
+    deny_policy['Arn'] = get_policy_arn(account_id)
+    return deny_policy
 
 
 def delete_deny_policy(iam_client, deny_policy_arn):
@@ -72,13 +85,6 @@ def attach_user_policy(iam_client, user_name, policy_arn):
   )
 
 
-def attach_group_policy(iam_client, group_name, policy_arn):
-  return iam_client.attach_group_policy(
-    GroupName=group_name,
-    PolicyArn=policy_arn
-  )
-
-
 def attach_role_policy(iam_client, role_name, policy_arn):
   return iam_client.attach_role_policy(
     RoleName=role_name,
@@ -89,13 +95,6 @@ def attach_role_policy(iam_client, role_name, policy_arn):
 def detach_user_policy(iam_client, user_name, policy_arn):
   return iam_client.detach_user_policy(
     UserName=user_name,
-    PolicyArn=policy_arn
-  )
-
-
-def detatch_group_policy(iam_client, group_name, policy_arn):
-  return iam_client.detach_group_policy(
-    GroupName=group_name,
     PolicyArn=policy_arn
   )
 

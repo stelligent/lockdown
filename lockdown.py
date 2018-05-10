@@ -8,10 +8,10 @@ sts_client = boto3.client('sts')
 
 nacl_logs = []
 policy_logs = []
+policy_name = 'LockdownDenyAll'
 user_name = iam_client.get_user()['User']['UserName']
 account_id = sts_client.get_caller_identity()['Account']
 users = iam_client.get_account_authorization_details(Filter=['User'])['UserDetailList']
-groups = iam_client.get_account_authorization_details(Filter=['Group'])['GroupDetailList']
 roles = iam_client.get_account_authorization_details(Filter=['Role'])['RoleDetailList']
 
 
@@ -30,21 +30,16 @@ if (len(sys.argv) == 1):
   helpers.save_logs(nacl_logs, "NACL log: ")
 
 
-  print("\n\n2. Lockdown IAM Users, Groups, and Roles")
-  deny_policy = helpers.create_deny_policy(iam_client)
+  print("\n\n2. Lockdown IAM Users and Roles")
+  deny_policy = helpers.create_deny_policy(iam_client, account_id, policy_name)
   for user in users:
     if user['UserName'] != user_name:
       try:
         policy_logs.append(helpers.attach_user_policy(iam_client, user['UserName'], deny_policy['Arn']))
       except Exception as err:
         print(err)
-  for group in groups:
-    try:
-      policy_logs.append(helpers.attach_group_policy(iam_client, group['GroupName'], deny_policy['Arn']))
-    except Exception as err:
-      print(err)
   for role in roles:
-    if role['RoleName'] != 'AWSServiceRoleForOrganizations':
+    if helpers.check_aws_roles(role['RoleName']):
       try:
         policy_logs.append(helpers.attach_role_policy(iam_client, role['RoleName'], deny_policy['Arn']))
       except Exception as err:
@@ -88,23 +83,18 @@ elif (sys.argv[1] == "revert"):
   print("2. Unlock IAM Users, Groups, and Roles")
   for user in users:
     try:
-      policy_logs.append(helpers.detach_user_policy(iam_client, user['UserName'], helpers.get_policy_arn(account_id)))
-    except Exception as err:
-      print(err)
-  for group in groups:
-    try:
-      policy_logs.append(helpers.detach_group_policy(iam_client, group['GroupName'], helpers.get_policy_arn(account_id)))
+      policy_logs.append(helpers.detach_user_policy(iam_client, user['UserName'], helpers.get_policy_arn(account_id, policy_name)))
     except Exception as err:
       print(err)
   for role in roles:
     if role['RoleName'] != 'AWSServiceRoleForOrganizations':
       try:
-        policy_logs.append(helpers.detach_role_policy(iam_client, role['RoleName'], helpers.get_policy_arn(account_id)))
+        policy_logs.append(helpers.detach_role_policy(iam_client, role['RoleName'], helpers.get_policy_arn(account_id, policy_name)))
       except Exception as err:
         print(err)
   helpers.save_logs(policy_logs, "IAM policy log: ")
   try:
-    delete_policy = helpers.delete_deny_policy(iam_client, helpers.get_policy_arn(account_id))
+    delete_policy = helpers.delete_deny_policy(iam_client, helpers.get_policy_arn(account_id, policy_name))
   except Exception as err:
     print(err)
 
