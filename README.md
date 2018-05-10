@@ -9,7 +9,7 @@ preferred response.
 AWS default profile must be set with "root" keys.  If incedent occurred in an AWS Organizations sub-account,
 use SCP for lockdown. This tool is only meant for standalone accounts not under organizational control.
 
-"Revert" mode will unlock an account after is has been locked down.  Basically this just reverts the
+"Unlock" mode will unlock an account after is has been locked down.  Basically this just reverts the
 applied polices and ACLs that lock down an account.  This should only be executed after the account
 has been verified clear of intrusion.
 
@@ -52,7 +52,7 @@ has been verified clear of intrusion.
 
 
 
-### `python3 lockdown.py revert` will take the following actions upon execution:
+### `python3 lockdown.py unlock` will take the following actions upon execution:
 
 
 #### 1. remove "lockdown" applied deny ACLs, if existing

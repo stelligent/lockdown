@@ -1,10 +1,15 @@
 import sys
 import boto3
 import helpers
+import argparse
 
 iam_client = boto3.client('iam')
 ec2_client = boto3.client('ec2')
 sts_client = boto3.client('sts')
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--unlock', action='store_true', help='Unlocks IAM users/roles, NACLs, and S3 buckets')
+args = parser.parse_args()
 
 nacl_logs = []
 policy_logs = []
@@ -20,9 +25,9 @@ helpers.verify_admin_user(iam_client, user_name)
 
 
 ### If no arguments to script are given, execute default lockdown behaviour.
-if (len(sys.argv) == 1):
+if not args.unlock:
 
-  print("\n\n1. Network Access Control List Deny:")
+  print("\n\n1. Lockdown Network Access Control Lists:")
   nacls = ec2_client.describe_network_acls()['NetworkAcls']
   for nacl in nacls:
     nacl_logs.append(helpers.create_nacl_entry(ec2_client, True, nacl['NetworkAclId'], 1))
@@ -47,26 +52,25 @@ if (len(sys.argv) == 1):
   helpers.save_logs(policy_logs, "IAM policy log: ")
 
 
-  print("3.  - all instances and mount volumes are snapshotted.")
+  print("\n\n3. Lockdown S3 buckets.")
 
 
-  print("4.  - add bucket policy jinja template to disable all public reads and writes.")
+  print("\n\n4. Snapshot all instances and mounted volumes.")
 
 
-  print("5.  - attempt to capture running processes and system memory via SSM, if available.")
+  print("\n\n5. SSM capture running processes and system memory, if available.")
 
 
-  print("6.  - stop all instances.")
+  print("\n\n6. Stop all instances.")
 
 
-  print("7.  - lookup and print cloudtrail logs and vpc flowlogs location, if available.")
+  print("\n\n7. Lookup Cloudtrail and Flowlogs locations, if available.")
 
 
+### Unlock account
+if args.unlock:
 
-### If single argument "revert" is given, unlock account
-elif (sys.argv[1] == "revert"):
-
-  print("1. Network Access Control List Allow.")
+  print("1. Unlock Network Access Control List.")
   nacls = ec2_client.describe_network_acls()['NetworkAcls']
   for nacl in nacls:
     try:
@@ -80,7 +84,7 @@ elif (sys.argv[1] == "revert"):
   helpers.save_logs(nacl_logs, "NACL log: ")
 
 
-  print("2. Unlock IAM Users, Groups, and Roles")
+  print("2. Unlock IAM Users and Roles")
   for user in users:
     try:
       policy_logs.append(helpers.detach_user_policy(iam_client, user['UserName'], helpers.get_policy_arn(account_id, policy_name)))

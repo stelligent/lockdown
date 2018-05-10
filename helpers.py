@@ -5,9 +5,9 @@ def check_aws_roles(role_name):
     role_name != 'AWSServiceRoleForOrganizations' and
     role_name != 'AWSServiceRoleForAutoScaling'
   ):
-    return true
+    return True
   else:
-    return false
+    return False
 
 def verify_admin_user(iam_client, user_name):
   print("Verify current user has Administrator privileges.")
