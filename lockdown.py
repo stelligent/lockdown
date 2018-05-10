@@ -87,7 +87,7 @@ elif (sys.argv[1] == "revert"):
     except Exception as err:
       print(err)
   for role in roles:
-    if role['RoleName'] != 'AWSServiceRoleForOrganizations':
+    if helpers.check_aws_roles(role['RoleName']):
       try:
         policy_logs.append(helpers.detach_role_policy(iam_client, role['RoleName'], helpers.get_policy_arn(account_id, policy_name)))
       except Exception as err:
