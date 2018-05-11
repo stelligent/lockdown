@@ -29,19 +29,19 @@ users = iam_client.get_account_authorization_details(Filter=['User'])['UserDetai
 roles = iam_client.get_account_authorization_details(Filter=['Role'])['RoleDetailList']
 
 
-def verify_admin_user(iam_client, user_name):
+def verify_admin_user():
   admin_logs = [ time.ctime() + ' ' + str(helpers.verify_admin_user(iam_client, user_name)) ]
   helpers.save_logs(admin_logs, 'ADMIN verify log: ')
 
 
-def lockdown_nacls(ec2_client):
+def lockdown_nacls():
   nacl_logs.append('Lockdown Network Access Control Lists')
   nacls = ec2_client.describe_network_acls()['NetworkAcls']
   for nacl in nacls:
     try:
-      nacl_logs.append(time.ctime() + ' ' + str(helpers.create_nacl_entry(ec2_client, True, nacl['NetworkAclId'], 1)))
+      nacl_logs.append(time.ctime() + ' ' + str(nacl) + ' ' + str(helpers.create_nacl_entry(ec2_client, True, nacl['NetworkAclId'], 1)))
     except Exception as err:
-      nacl_logs.append(time.ctime() + ' ' + str(err))
+      nacl_logs.append(time.ctime() + ' ' + str(nacl) + ' ' + str(err))
     try:
       nacl_logs.append(time.ctime() + ' ' + str(helpers.create_nacl_entry(ec2_client, False, nacl['NetworkAclId'], 2)))
     except Exception as err:
@@ -49,21 +49,21 @@ def lockdown_nacls(ec2_client):
   helpers.save_logs(nacl_logs, 'NACL log: ')
 
 
-def lockdown_iam(iam_client, account_id, policy_name):
+def lockdown_iam():
   policy_logs.append('Lockdown IAM Users and Roles')
   deny_policy = helpers.create_deny_policy(iam_client, account_id, policy_name)
   for user in users:
     if user['UserName'] != user_name:
       try:
-        policy_logs.append(time.ctime() + ' ' + str(helpers.attach_user_policy(iam_client, user['UserName'], deny_policy['Arn'])))
+        policy_logs.append(time.ctime() + ' ' + str(user) + ' ' + str(helpers.attach_user_policy(iam_client, user['UserName'], deny_policy['Arn'])))
       except Exception as err:
-        policy_logs.append(time.ctime() + ' ' + str(err))
+        policy_logs.append(time.ctime() + ' ' + str(user) + ' ' + str(err))
   for role in roles:
     if helpers.check_aws_roles(role['RoleName']):
       try:
-        policy_logs.append(time.ctime() + ' ' + str(helpers.attach_role_policy(iam_client, role['RoleName'], deny_policy['Arn'])))
+        policy_logs.append(time.ctime() + ' ' + str(role) + ' ' + str(helpers.attach_role_policy(iam_client, role['RoleName'], deny_policy['Arn'])))
       except Exception as err:
-        policy_logs.append(time.ctime() + ' ' + str(err))
+        policy_logs.append(time.ctime() + ' ' + str(role) + ' ' + str(err))
   helpers.save_logs(policy_logs, 'IAM policy log: ')
 
 
@@ -92,14 +92,14 @@ def lookup_audit_logs():
   helpers.save_logs(audit_logs, 'AUDIT log: ')
 
 
-def unlock_nacls(ec2_client):
+def unlock_nacls():
   nacl_logs = [ 'Unlock Network Access Control List' ]
   nacls = ec2_client.describe_network_acls()['NetworkAcls']
   for nacl in nacls:
     try:
-      nacl_logs.append(time.ctime() + ' ' + str(helpers.delete_nacl_entry(ec2_client, True, nacl['NetworkAclId'], 1)))
+      nacl_logs.append(time.ctime() + ' ' + str(nacl) + ' ' + str(helpers.delete_nacl_entry(ec2_client, True, nacl['NetworkAclId'], 1)))
     except Exception as err:
-      nacl_logs.append(time.ctime() + ' ' + str(err))
+      nacl_logs.append(time.ctime() + ' ' + str(nacl) + ' ' + str(err))
     try:
       nacl_logs.append(time.ctime() + ' ' + str(helpers.delete_nacl_entry(ec2_client, False, nacl['NetworkAclId'], 2)))
     except Exception as err:
@@ -107,23 +107,23 @@ def unlock_nacls(ec2_client):
   helpers.save_logs(nacl_logs, 'NACL log: ')
 
 
-def unlock_iam(iam_client, account_id, policy_name):
+def unlock_iam():
   policy_logs = [ 'Unlock IAM Users and Roles' ]
   for user in users:
     try:
-      policy_logs.append(time.ctime() + ' ' + str(helpers.detach_user_policy(iam_client, user['UserName'], helpers.get_policy_arn(account_id, policy_name))))
+      policy_logs.append(time.ctime() + ' ' + str(user) + ' ' + str(helpers.detach_user_policy(iam_client, user['UserName'], helpers.get_policy_arn(account_id, policy_name))))
     except Exception as err:
-      policy_logs.append(time.ctime() + ' ' + str(err))
+      policy_logs.append(time.ctime() + ' ' + str(user) + ' ' + str(err))
   for role in roles:
     if helpers.check_aws_roles(role['RoleName']):
       try:
-        policy_logs.append(time.ctime() + ' ' + str(helpers.detach_role_policy(iam_client, role['RoleName'], helpers.get_policy_arn(account_id, policy_name))))
+        policy_logs.append(time.ctime() + ' ' + str(role) + ' ' + str(helpers.detach_role_policy(iam_client, role['RoleName'], helpers.get_policy_arn(account_id, policy_name))))
       except Exception as err:
-        policy_logs.append(time.ctime() + ' ' + str(err))
+        policy_logs.append(time.ctime() + ' ' + str(role) + ' ' + str(err))
   try:
-    policy_logs.append(time.ctime() + ' ' + str(helpers.delete_deny_policy(iam_client, helpers.get_policy_arn(account_id, policy_name))))
+    policy_logs.append(time.ctime() + ' ' + policy_name + ' ' + account_id + ' ' + str(helpers.delete_deny_policy(iam_client, helpers.get_policy_arn(account_id, policy_name))))
   except Exception as err:
-    policy_logs.append(time.ctime() + ' ' + str(err))
+    policy_logs.append(time.ctime() + ' ' + policy_name + ' ' + account_id + str(err))
   helpers.save_logs(policy_logs, 'IAM policy log: ')
 
 
@@ -132,9 +132,9 @@ def unlock_s3():
   helpers.save_logs(s3_logs, 'S3 log: ')
 
 
-def lockdown(ec2_client, iam_client, account_id, policy_name):
-  lockdown_nacls(ec2_client)
-  lockdown_iam(iam_client, account_id, policy_name)
+def lockdown():
+  lockdown_nacls()
+  lockdown_iam()
   lockdown_s3()
   snapshot_ebs()
   capture_ssm()
@@ -142,33 +142,33 @@ def lockdown(ec2_client, iam_client, account_id, policy_name):
   lookup_audit_logs()
 
 
-def unlock(ec2_client, iam_client, account_id, policy_name):
-  unlock_nacls(ec2_client)
-  unlock_iam(iam_client, account_id, policy_name)
+def unlock():
+  unlock_nacls()
+  unlock_iam()
   unlock_s3()
 
 
 def main():
   ### Verify current user has AdministratorAccess policy
-  verify_admin_user(iam_client, user_name)
+  verify_admin_user()
 
   ### Unlock account
   if args.unlock:
     if args.nacls:
-      unlock_nacls(ec2_client)
+      unlock_nacls()
     elif args.iam:
-      unlock_iam(iam_client, account_id, policy_name)
+      unlock_iam()
     elif args.s3:
       unlock_s3()
     else:
-      unlock(ec2_client, iam_client, account_id, policy_name)
+      unlock()
 
   ### Lock account
   else:
     if args.nacls:
-      lockdown_nacls(ec2_client)
+      lockdown_nacls()
     elif args.iam:
-      lockdown_iam(iam_client, account_id, policy_name)
+      lockdown_iam()
     elif args.s3:
       lockdown_s3()
     elif args.ebs:
@@ -180,7 +180,7 @@ def main():
     elif args.logs:
       lookup_audit_logs()
     else:
-      lockdown(ec2_client, iam_client, account_id, policy_name)
+      lockdown()
 
 
 if __name__== "__main__":
