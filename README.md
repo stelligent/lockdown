@@ -65,3 +65,21 @@ has been verified clear of intrusion.
 
 #### 3. remove s3 bucket deny policy
   - Remove deny public access policy applied during lockdown from s3 buckets
+
+
+
+```
+usage: lockdown.py [-h] [--unlock] [--nacls] [--iam] [--s3] [--ebs] [--ssm]
+                   [--ec2] [--logs]
+
+optional arguments:
+  -h, --help  show this help message and exit
+  --unlock    Unlocks IAM users/roles, NACLs, and S3 buckets
+  --nacls     Only lock/unlock NACLs
+  --iam       Only lock/unlock IAM
+  --s3        Only lock/unlock S3
+  --ebs       Only snapshot EBS
+  --ssm       Only capture_ssm
+  --ec2       Only stop instances
+  --logs      Only report Cloudtrail and Flowlogs status
+```

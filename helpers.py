@@ -10,7 +10,6 @@ def check_aws_roles(role_name):
     return False
 
 def verify_admin_user(iam_client, user_name):
-  print("Verify current user has Administrator privileges.")
   user_policies = iam_client.list_attached_user_policies(UserName=user_name)['AttachedPolicies']
   user_admin = False
   for policy in user_policies:
@@ -24,7 +23,7 @@ def verify_admin_user(iam_client, user_name):
         if policy['PolicyName'] == "AdministratorAccess":
           user_admin = True
   if user_admin:
-    print("Current aws profile user keys are valid.  continuing.")
+    return 'Current aws profile user keys are valid.'
   else:
     print("In order to run this code, please add the AdministratorAccess managed IAM policy to your current user.")
     sys.exit(1)
@@ -68,14 +67,12 @@ def create_deny_policy(iam_client, account_id, policy_name):
     return deny_policy
   except Exception as err:
     deny_policy = {}
-    deny_policy['Arn'] = get_policy_arn(account_id)
+    deny_policy['Arn'] = get_policy_arn(account_id, policy_name)
     return deny_policy
 
 
 def delete_deny_policy(iam_client, deny_policy_arn):
-  delete_policy = iam_client.delete_policy(PolicyArn=deny_policy_arn)
-  print("Delete policy: " + str(delete_policy))
-  return delete_policy
+  return iam_client.delete_policy(PolicyArn=deny_policy_arn)
 
 
 def attach_user_policy(iam_client, user_name, policy_arn):
