@@ -4,19 +4,22 @@ import core
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--unlock', action='store_true', help='Unlocks IAM users/roles, NACLs, and S3 buckets')
-parser.add_argument('--nacls', action='store_true', help='Only lock/unlock NACLs')
-parser.add_argument('--iam', action='store_true', help='Only lock/unlock IAM')
-parser.add_argument('--s3', action='store_true', help='Only lock/unlock S3')
-parser.add_argument('--ebs', action='store_true', help='Only snapshot EBS')
-parser.add_argument('--ssm', action='store_true', help='Only capture_ssm')
-parser.add_argument('--ec2', action='store_true', help='Only stop instances')
-parser.add_argument('--logs', action='store_true', help='Only report Cloudtrail and Flowlogs status')
+parser.add_argument('--all', action='store_true', help='Locks account, and performs all post lockdown functions')
+parser.add_argument('--lock', action='store_true', help='Locks account via NACLs and IAM polices.')
+parser.add_argument('--unlock', action='store_true', help='Unlocks account removing NACLs and IAM policies.')
+parser.add_argument('--s3', action='store_true', help='Locks S3 with Private ACL on every bucket. CANNOT BE UNDONE.')
+parser.add_argument('--nacls', action='store_true', help='Only lock/unlock NACLs.')
+parser.add_argument('--iam', action='store_true', help='Only lock/unlock IAM.')
+parser.add_argument('--ebs', action='store_true', help='Snapshot all EBS volumes running.')
+parser.add_argument('--ssm', action='store_true', help='Attempt to capture running system via SSM.')
+parser.add_argument('--ec2', action='store_true', help='Stop all running instances.')
+parser.add_argument('--logs', action='store_true', help='Report account Cloudtrail and Flowlogs status')
 args = parser.parse_args()
 
 iam_client = boto3.client('iam')
 ec2_client = boto3.client('ec2')
 sts_client = boto3.client('sts')
+s3_client = boto3.client('s3')
 
 policy_name = 'LockdownDenyAll'
 user_name = iam_client.get_user()['User']['UserName']
@@ -28,17 +31,11 @@ roles = iam_client.get_account_authorization_details(Filter=['Role'])['RoleDetai
 def lockdown():
   core.lockdown_nacls(ec2_client)
   core.lockdown_iam(iam_client, account_id, policy_name, users, roles, user_name)
-  core.lockdown_s3()
-  core.snapshot_ebs()
-  core.capture_ssm()
-  core.stop_instances()
-  core.lookup_audit_logs()
 
 
 def unlock():
   core.unlock_nacls(ec2_client)
   core.unlock_iam(iam_client, account_id, policy_name, users, roles)
-  core.unlock_s3()
 
 
 def main():
@@ -51,29 +48,46 @@ def main():
       core.unlock_nacls(ec2_client)
     elif args.iam:
       core.unlock_iam(iam_client, account_id, policy_name, users, roles)
-    elif args.s3:
-      core.unlock_s3()
     else:
       unlock()
 
   ### Lock account
-  else:
+  if args.lock:
     if args.nacls:
       core.lockdown_nacls(ec2_client)
     elif args.iam:
       core.lockdown_iam(iam_client, account_id, policy_name, users, roles, user_name)
-    elif args.s3:
-      core.lockdown_s3()
-    elif args.ebs:
-      core.snapshot_ebs()
-    elif args.ssm:
-      core.capture_ssm()
-    elif args.ec2:
-      core.stop_instances()
-    elif args.logs:
-      core.lookup_audit_logs()
     else:
       lockdown()
+
+  ### Lock S3
+  if args.s3:
+    core.lockdown_s3(s3_client)
+
+  ### Snap EBS
+  if args.ebs:
+    core.snapshot_ebs()
+
+  ### Capture SSM
+  if args.ssm:
+    core.capture_ssm()
+
+  ### Stop Instances
+  if args.ec2:
+    core.stop_instances()
+
+  ### Lookup Audit Logs
+  if args.logs:
+    core.lookup_audit_logs()
+
+  ### Lockdown All
+  if args.all:
+    lockdown()
+    core.lockdown_s3(s3_client)
+    core.snapshot_ebs()
+    core.capture_ssm()
+    core.stop_instances()
+    core.lookup_audit_logs()
 
 
 if __name__== "__main__":

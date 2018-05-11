@@ -11,19 +11,21 @@ environment undisturbed.  Changes are solely additive, and can be removed in `un
 
 
 ```
-usage: lockdown.py [-h] [--unlock] [--nacls] [--iam] [--s3] [--ebs] [--ssm]
-                   [--ec2] [--logs]
+usage: lockdown.py [-h] [--all] [--lock] [--unlock] [--s3] [--nacls] [--iam]
+                   [--ebs] [--ssm] [--ec2] [--logs]
 
 optional arguments:
   -h, --help  show this help message and exit
-  --unlock    Unlocks IAM users/roles, NACLs, and S3 buckets
-  --nacls     Only lock/unlock NACLs
-  --iam       Only lock/unlock IAM
-  --s3        Only lock/unlock S3
-  --ebs       Only snapshot EBS
-  --ssm       Only capture_ssm
-  --ec2       Only stop instances
-  --logs      Only report Cloudtrail and Flowlogs status
+  --all       Locks account, and performs all post lockdown functions
+  --lock      Locks account via NACLs and IAM polices.
+  --unlock    Unlocks account removing NACLs and IAM policies.
+  --s3        Locks S3 with Private ACL on every bucket. CANNOT BE UNDONE.
+  --nacls     Only lock/unlock NACLs.
+  --iam       Only lock/unlock IAM.
+  --ebs       Snapshot all EBS volumes running.
+  --ssm       Attempt to capture running system via SSM.
+  --ec2       Stop all running instances.
+  --logs      Report account Cloudtrail and Flowlogs status
 ```
 
 
@@ -48,7 +50,7 @@ NOTE: This software will render your account unusable by anyone other than you. 
   
 
 2. Deactivate all IAM users and roles
-   * deny policy is attached to all users, groups and roles.
+   * Deny policy is attached to all users, groups and roles.
    * Mitigates attacks such as persistant sts sessions, cross-account access, or cron'd Lambdas.
    * Existing policies are left intact for forensics
 
@@ -80,14 +82,14 @@ NOTE: This software will render your account unusable by anyone other than you. 
 ### `python3 lockdown.py --unlock` executes the following actions:
 
 
-1. Remove "lockdown" applied deny NACLs, if existing
+1. Remove "lockdown" deny all NACLs
    * NACLs previously applied to stop traffic are removed
 
 
-2. Remove IAM deny all policy
-   * Deny policy is removed from all users and roles
-   * Deny policy is deleted
+2. Remove "lockdown" deny all IAM policy
+   * Deny all IAM policy is removed from all users and roles
+   * Deny all IAM policy is deleted
 
 
-3. Remove S3 bucket deny policy
-   * Deny policy is removed from all S3 buckets
+3. Remove "lockdown" deny all S3 bucket policy
+   * Deny all S3 bucket policy is removed from all buckets

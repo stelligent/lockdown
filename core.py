@@ -40,8 +40,20 @@ def lockdown_iam(iam_client, account_id, policy_name, users, roles, user_name):
   helpers.save_logs(policy_logs, 'IAM policy log: ')
 
 
-def lockdown_s3():
+def lockdown_s3(s3_client):
   s3_logs = [ 'Lockdown S3 buckets' ]
+  try:
+    buckets_raw = helpers.get_buckets(s3_client)
+  except Exception as err:
+    s3_logs.append(time.ctime() + ' ' + str(err))
+    print('Are there any buckets?')
+    sys.exit(1)
+  buckets = [ bucket['Name'] for bucket in buckets_raw ]
+  for bucket in buckets:
+    try:
+      s3_logs.append(time.ctime() + ' ' + bucket + ' ' + str(s3_client.put_bucket_acl(Bucket=bucket, ACL='private')))
+    except Exception as err:
+      s3_logs.append(time.ctime() + ' ' + bucket + ' ' + str(err))
   helpers.save_logs(s3_logs, 'S3 log: ')
 
 
@@ -98,8 +110,3 @@ def unlock_iam(iam_client, account_id, policy_name, users, roles):
   except Exception as err:
     policy_logs.append(time.ctime() + ' ' + policy_name + ' ' + account_id + str(err))
   helpers.save_logs(policy_logs, 'IAM policy log: ')
-
-
-def unlock_s3():
-  s3_logs = [ 'Unlock S3' ]
-  helpers.save_logs(s3_logs, 'S3 log: ')

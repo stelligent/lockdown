@@ -1,5 +1,9 @@
 import sys
 
+
+def get_buckets(s3_client):
+  return s3_client.list_buckets()['Buckets']
+
 def check_aws_roles(role_name):
   if (
     role_name != 'AWSServiceRoleForOrganizations' and
