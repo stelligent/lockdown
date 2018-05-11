@@ -46,8 +46,6 @@ def lockdown_s3(s3_client):
     buckets_raw = helpers.get_buckets(s3_client)
   except Exception as err:
     s3_logs.append(time.ctime() + ' ' + str(err))
-    print('Are there any buckets?')
-    sys.exit(1)
   buckets = [ bucket['Name'] for bucket in buckets_raw ]
   for bucket in buckets:
     try:
@@ -57,9 +55,18 @@ def lockdown_s3(s3_client):
   helpers.save_logs(s3_logs, 'S3 log: ')
 
 
-def snapshot_ebs():
-  ebs_logs = [ 'Snapshot all instances and mounted volumes' ]
-  helpers.save_logs(ebs_logs, 'EBS log: ')
+def image_instances(ec2_client):
+  image_logs = [ 'Image all instances' ]
+  try:
+    instances = ec2_client.describe_instances(Filters=[ {'Name': 'instance-state-name', 'Values': [ 'running' ]} ])['Reservations'][0]['Instances']
+  except Exception as err:
+    image_logs.append(time.ctime() + ' ' + str(err))
+  for instance in instances:
+    try:
+      image_logs.append(time.ctime() + ' ' + str(instance) + ' ' + str(ec2_client.create_image(Description=instance['InstanceId'], InstanceId=instance['InstanceId'], Name=instance['InstanceId'], NoReboot=True)))
+    except Exception as err:
+      image_logs.append(time.ctime() + ' ' + str(instance) + ' ' + str(err))
+  helpers.save_logs(image_logs, 'EC2 image log: ')
 
 
 def capture_ssm():
@@ -67,9 +74,18 @@ def capture_ssm():
   helpers.save_logs(ssm_logs, 'SSM log: ')
 
 
-def stop_instances():
-  ec2_logs = [ 'Stop all instances' ]
-  helpers.save_logs(ec2_logs, 'EC2 log: ')
+def stop_instances(ec2_client):
+  instance_logs = [ 'Stop all instances' ]
+  try:
+    instances = ec2_client.describe_instances(Filters=[ {'Name': 'instance-state-name', 'Values': [ 'running' ]} ])['Reservations'][0]['Instances']
+  except Exception as err:
+    instance_logs.append(time.ctime() + ' ' + str(err))
+  for instance in instances:
+    try:
+      instance_logs.append(time.ctime() + ' ' + str(instance) + ' ' + str(ec2_client.stop_instances(InstanceIds=instance['InstanceId'])))
+    except Exception as err:
+      instance_logs.append(time.ctime() + ' ' + str(instance) + ' ' + str(err))
+  helpers.save_logs(instance_logs, 'EC2 stop log: ')
 
 
 def lookup_audit_logs():

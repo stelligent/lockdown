@@ -10,9 +10,9 @@ parser.add_argument('--unlock', action='store_true', help='Unlocks account remov
 parser.add_argument('--s3', action='store_true', help='Locks S3 with Private ACL on every bucket. CANNOT BE UNDONE.')
 parser.add_argument('--nacls', action='store_true', help='Only lock/unlock NACLs.')
 parser.add_argument('--iam', action='store_true', help='Only lock/unlock IAM.')
-parser.add_argument('--ebs', action='store_true', help='Snapshot all EBS volumes running.')
+parser.add_argument('--image', action='store_true', help='Image all running instances.')
 parser.add_argument('--ssm', action='store_true', help='Attempt to capture running system via SSM.')
-parser.add_argument('--ec2', action='store_true', help='Stop all running instances.')
+parser.add_argument('--stop', action='store_true', help='Stop all running instances.')
 parser.add_argument('--logs', action='store_true', help='Report account Cloudtrail and Flowlogs status')
 args = parser.parse_args()
 
@@ -65,16 +65,16 @@ def main():
     core.lockdown_s3(s3_client)
 
   ### Snap EBS
-  if args.ebs:
-    core.snapshot_ebs()
+  if args.image:
+    core.image_instances(ec2_client)
 
   ### Capture SSM
   if args.ssm:
     core.capture_ssm()
 
   ### Stop Instances
-  if args.ec2:
-    core.stop_instances()
+  if args.stop:
+    core.stop_instances(ec2_client)
 
   ### Lookup Audit Logs
   if args.logs:
@@ -84,9 +84,9 @@ def main():
   if args.all:
     lockdown()
     core.lockdown_s3(s3_client)
-    core.snapshot_ebs()
+    core.image_instances(ec2_client)
     core.capture_ssm()
-    core.stop_instances()
+    core.stop_instances(ec2_client)
     core.lookup_audit_logs()
 
 
