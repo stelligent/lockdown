@@ -58,38 +58,38 @@ def lockdown_s3(s3_client):
 def image_instances(ec2_client):
   image_logs = [ 'Image all instances' ]
   try:
-    instances = ec2_client.describe_instances(Filters=[ {'Name': 'instance-state-name', 'Values': [ 'running' ]} ])['Reservations'][0]['Instances']
+    instances = helpers.get_running_instances(ec2_client)
   except Exception as err:
     image_logs.append(time.ctime() + ' ' + str(err))
   for instance in instances:
     try:
-      image_logs.append(time.ctime() + ' ' + str(instance) + ' ' + str(ec2_client.create_image(Description=instance['InstanceId'], InstanceId=instance['InstanceId'], Name=instance['InstanceId'], NoReboot=True)))
+      image_logs.append(time.ctime() + ' ' + str(instance) + ' ' + str(helpers.image_instance(ec2_client, instance)))
     except Exception as err:
       image_logs.append(time.ctime() + ' ' + str(instance) + ' ' + str(err))
   helpers.save_logs(image_logs, 'EC2 image log: ')
 
 
 def capture_ssm():
-  ssm_logs = [ 'SSM capture running processes and system memory, if available' ]
+  ssm_logs = [ 'SSM capture running processes and system memory' ]
   helpers.save_logs(ssm_logs, 'SSM log: ')
 
 
 def stop_instances(ec2_client):
   instance_logs = [ 'Stop all instances' ]
   try:
-    instances = ec2_client.describe_instances(Filters=[ {'Name': 'instance-state-name', 'Values': [ 'running' ]} ])['Reservations'][0]['Instances']
+    instances = helpers.get_running_instances(ec2_client)
   except Exception as err:
     instance_logs.append(time.ctime() + ' ' + str(err))
   for instance in instances:
     try:
-      instance_logs.append(time.ctime() + ' ' + str(instance) + ' ' + str(ec2_client.stop_instances(InstanceIds=instance['InstanceId'])))
+      instance_logs.append(time.ctime() + ' ' + str(instance) + ' ' + str(ec2_client.stop_instances(InstanceIds=[instance['InstanceId']])))
     except Exception as err:
       instance_logs.append(time.ctime() + ' ' + str(instance) + ' ' + str(err))
   helpers.save_logs(instance_logs, 'EC2 stop log: ')
 
 
 def lookup_audit_logs(cloudtrail_client, ec2_client):
-  audit_logs = [ 'Lookup Cloudtrail and Flowlogs locations, if available' ]
+  audit_logs = [ 'Lookup Cloudtrail and Flowlogs locations' ]
   audit_logs.extend([ 'Cloudtrail logs S3 Bucket: ' + trail['S3BucketName'] for trail in cloudtrail_client.describe_trails()['trailList'] ])
   audit_logs.append(time.ctime() + ' ' + str(ec2_client.describe_flow_logs()))
   helpers.save_logs(audit_logs, 'AUDIT log: ')

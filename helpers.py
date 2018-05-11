@@ -1,5 +1,10 @@
 import sys
 
+def image_instance(ec2_client, instance):
+  return ec2_client.create_image(Description=instance['InstanceId'], InstanceId=instance['InstanceId'], Name=instance['InstanceId'], NoReboot=True)
+
+def get_running_instances(ec2_client):
+  return ec2_client.describe_instances(Filters=[ {'Name': 'instance-state-name', 'Values': [ 'running' ]} ])['Reservations'][0]['Instances']
 
 def get_buckets(s3_client):
   return s3_client.list_buckets()['Buckets']
