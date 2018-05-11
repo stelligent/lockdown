@@ -36,54 +36,58 @@ applied polices and NACLs that lock down an account.  This should only be execut
 the account has been verified clear of intrusion.
 
 
-### `python3 lockdown.py` will take the following actions upon execution:
+NOTE: This software will render your account unusable by anyone other than you. Please exec with care.
 
 
-- 1. cut off all network access to all subnets
-  - acls are applied to prevent any and all traffic
-  - security groups are left intact for forensics
+### `python3 lockdown.py` executes the following actions:
+
+
+1. Cut off all network access to all subnets
+   * NACLs are applied to prevent any and all traffic
+   * Security groups are left intact for forensics
   
 
-- 2. deactivate all iam users and roles
-  - deny policy is attached to all users, groups and roles.
-    -  this mitigates attacks such as persistant sts sessions, cross-account access,
-       or as part of a future event, such as a cron'd lambda or scheduled datapipeline event.
-  - existing policies are left intact for forensics
+2. Deactivate all IAM users and roles
+   * deny policy is attached to all users, groups and roles.
+   * Mitigates attacks such as persistant sts sessions, cross-account access, or cron'd Lambdas.
+   * Existing policies are left intact for forensics
 
 
-- 3. ebs snapshot all instances
-  - all instance volumes are snapshotted for forensics
+3. EBS snapshot all instances
+   * All instance volumes are snapshotted for forensics
 
 
-- 4. disable public s3 access
-  - add bucket policy to disable all public reads and writes
-    - this protects from data exfiltration and file warehousing
+4. Disable public s3 access
+   * Add bucket policy to disable all public reads and writes
+   * This protects from data exfiltration and file warehousing
 
 
-- 5. execute any forensic tooling via SSM
-  - attempt to capture running processes and system memory
+5. Execute any forensic tooling via SSM
+   * Capture running processes and system memory
 
 
-- 6. stop all running instances
-  - stops instances after snapshotting, and possible ssm action, so as to lessen runtime charges
+6. Stop all running instances
+   * Executes after ebs snapshot and ssm capture
+   * Lessens runtime charges
 
 
-- 7. report on cloudtrail and flowlogs status
-  - if logs are available, print out location of logs
+7. Report on cloudtrail and flowlogs status
+   * If logs are available, print out location of logs
 
 
 
 
-### `python3 lockdown.py --unlock` will take the following actions upon execution:
+### `python3 lockdown.py --unlock` executes the following actions:
 
 
-- 1. remove "lockdown" applied deny ACLs, if existing
-  - ACLs applied to stop traffic are removed
+1. Remove "lockdown" applied deny NACLs, if existing
+   * NACLs previously applied to stop traffic are removed
 
 
-- 2. detach deny policy from all users, groups, and roles
-  - Deny policy applied to prevent API calls is removed
+2. Remove IAM deny all policy
+   * Deny policy is removed from all users and roles
+   * Deny policy is deleted
 
 
-- 3. remove s3 bucket deny policy
-  - Remove deny public access policy applied during lockdown from s3 buckets
+3. Remove S3 bucket deny policy
+   * Deny policy is removed from all S3 buckets
