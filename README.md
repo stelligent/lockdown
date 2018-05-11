@@ -27,7 +27,7 @@ optional arguments:
 ```
 
 
-AWS profile must be set with "root" keys.  This means the "AdministratorAccess" aws managed
+AWS profile must be set with "root" keys.  This means the "AdministratorAccess" IAM managed
 policy must be attached to the user whose keys are executing this code.
 
 
