@@ -88,8 +88,10 @@ def stop_instances(ec2_client):
   helpers.save_logs(instance_logs, 'EC2 stop log: ')
 
 
-def lookup_audit_logs():
+def lookup_audit_logs(cloudtrail_client, ec2_client):
   audit_logs = [ 'Lookup Cloudtrail and Flowlogs locations, if available' ]
+  audit_logs.extend([ 'Cloudtrail logs S3 Bucket: ' + trail['S3BucketName'] for trail in cloudtrail_client.describe_trails()['trailList'] ])
+  audit_logs.append(time.ctime() + ' ' + str(ec2_client.describe_flow_logs()))
   helpers.save_logs(audit_logs, 'AUDIT log: ')
 
 

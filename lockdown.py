@@ -20,6 +20,7 @@ iam_client = boto3.client('iam')
 ec2_client = boto3.client('ec2')
 sts_client = boto3.client('sts')
 s3_client = boto3.client('s3')
+cloudtrail_client = boto3.client('cloudtrail')
 
 policy_name = 'LockdownDenyAll'
 user_name = iam_client.get_user()['User']['UserName']
@@ -78,7 +79,7 @@ def main():
 
   ### Lookup Audit Logs
   if args.logs:
-    core.lookup_audit_logs()
+    core.lookup_audit_logs(cloudtrail_client, ec2_client)
 
   ### Lockdown All
   if args.all:
@@ -87,7 +88,7 @@ def main():
     core.image_instances(ec2_client)
     core.capture_ssm()
     core.stop_instances(ec2_client)
-    core.lookup_audit_logs()
+    core.lookup_audit_logs(cloudtrail_client, ec2_client)
 
 
 if __name__== "__main__":
