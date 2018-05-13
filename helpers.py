@@ -1,7 +1,21 @@
 import sys
+import time
 
-def image_instance(ec2_client, instance):
-  return ec2_client.create_image(Description=instance['InstanceId'], InstanceId=instance['InstanceId'], Name=instance['InstanceId'], NoReboot=True)
+def ssm_make_document(ssm_client, ssm_command, ssm_document_name, ssm_document_body):
+  time.sleep(1)
+  return ssm_client.create_document(Content=ssm_command_body, Name=ssm_document_name, DocumentType='Command', DocumentFormat='JSON')
+
+def ssm_exec_document(ssm_client, instance, ssm_document_name):
+  time.sleep(1)
+  return ssm_client.send_command(InstanceIds=['instance'], DocumentName=ssm_document_name)
+
+def stop_instance(ec2_client, instance_id):
+  time.sleep(1)
+  return ec2_client.stop_instances(InstanceIds=[ instance_id ])
+
+def image_instance(ec2_client, instance_id):
+  time.sleep(1)
+  return ec2_client.create_image(Description=instance_id, InstanceId=instance_id, Name=instance_id, NoReboot=True)
 
 def get_running_instances(ec2_client):
   return ec2_client.describe_instances(Filters=[ {'Name': 'instance-state-name', 'Values': [ 'running' ]} ])['Reservations'][0]['Instances']

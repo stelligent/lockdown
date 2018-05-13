@@ -20,6 +20,7 @@ iam_client = boto3.client('iam')
 ec2_client = boto3.client('ec2')
 sts_client = boto3.client('sts')
 s3_client = boto3.client('s3')
+ssm_client = boto3.client('ssm')
 cloudtrail_client = boto3.client('cloudtrail')
 
 policy_name = 'LockdownDenyAll'
@@ -27,6 +28,9 @@ user_name = iam_client.get_user()['User']['UserName']
 account_id = sts_client.get_caller_identity()['Account']
 users = iam_client.get_account_authorization_details(Filter=['User'])['UserDetailList']
 roles = iam_client.get_account_authorization_details(Filter=['Role'])['RoleDetailList']
+ssm_command = 'ps -efww'
+ssm_document_name = 'LockdownExecute'
+ssm_document_body = '{"schemaVersion":"1.2","runtimeConfig":{"aws:runShellScript":{"properties":[{"id":"0.aws:runShellScript","runCommand":["#!/bin/bash","' + ssm_command + '"]}]}}}'
 
 
 def lockdown():
@@ -71,7 +75,7 @@ def main():
 
   ### Capture SSM
   if args.ssm:
-    core.capture_ssm()
+    core.capture_ssm(ec2_client, ssm_client, ssm_command, ssm_document_name, ssm_document_body)
 
   ### Stop Instances
   if args.stop:
@@ -86,7 +90,7 @@ def main():
     lockdown()
     core.lockdown_s3(s3_client)
     core.image_instances(ec2_client)
-    core.capture_ssm()
+    core.capture_ssm(ec2_client, ssm_client, ssm_command, ssm_document_name, ssm_document_body)
     core.stop_instances(ec2_client)
     core.lookup_audit_logs(cloudtrail_client, ec2_client)
 
