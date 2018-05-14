@@ -3,11 +3,11 @@ import time
 
 def ssm_make_document(ssm_client, ssm_command, ssm_document_name, ssm_document_body):
   time.sleep(1)
-  return ssm_client.create_document(Content=ssm_command_body, Name=ssm_document_name, DocumentType='Command', DocumentFormat='JSON')
+  return ssm_client.create_document(Content=ssm_document_body, Name=ssm_document_name, DocumentType='Command', DocumentFormat='JSON')
 
-def ssm_exec_document(ssm_client, instance, ssm_document_name):
+def ssm_exec_document(ssm_client, instance_id, ssm_document_name):
   time.sleep(1)
-  return ssm_client.send_command(InstanceIds=['instance'], DocumentName=ssm_document_name)
+  return ssm_client.send_command(InstanceIds=[ instance_id ], DocumentName=ssm_document_name)
 
 def stop_instance(ec2_client, instance_id):
   time.sleep(1)
