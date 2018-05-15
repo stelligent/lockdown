@@ -34,14 +34,11 @@ policy must be attached to the user whose keys are executing this code.
 
 
 "Unlock" mode will unlock an account after is has been locked down.  Unlock reverts the
-applied polices and NACLs that lock down an account.  This should only be executed after
+applied IAM polices and NACLs that lock down an account.  This should only be executed after
 the account has been verified clear of intrusion.
 
 
-NOTE: This software will render your account unusable by anyone other than you. Please exec with care.
-
-
-### `python3 lockdown.py` executes the following actions:
+### `python3 lockdown.py --lock`
 
 
 1. Cut off all network access to all subnets.
@@ -55,32 +52,7 @@ NOTE: This software will render your account unusable by anyone other than you. 
    * Existing policies are left intact for forensics.
 
 
-3. Image all instances.
-   * All running instances are imaged.
-
-
-4. Disable public S3 access on all buckets.
-   * Add Private ACL to all buckets to disable all public reads and writes.
-   * This protects from data exfiltration and file warehousing.
-   * This is irreversible and must be restored manually, if necessary.
-
-
-5. Execute any forensic tooling via SSM.
-   * Capture running processes and system memory.
-
-
-6. Stop all running instances.
-   * Executes after ebs snapshot and ssm capture.
-   * Minimizes runtime charges.
-
-
-7. Report on Cloudtrail and Flowlogs status.
-   * If logs are available, print out location of logs.
-
-
-
-
-### `python3 lockdown.py --unlock` executes the following actions:
+### `python3 lockdown.py --unlock`
 
 
 1. Remove "lockdown" deny all NACLs.
@@ -90,3 +62,36 @@ NOTE: This software will render your account unusable by anyone other than you. 
 2. Remove "lockdown" deny all IAM policy.
    * Deny all IAM policy is removed from all users and roles.
    * Deny all IAM policy is deleted.
+
+
+### `python lockdown --all`
+
+1. Lock all the things.
+   * NACLs.
+   * IAM Policies.
+
+
+2. Image all instances.
+   * All running instances are imaged.
+
+
+3. Disable public S3 access on all buckets.
+   * Add Private ACL to all buckets to disable all public reads and writes.
+   * This protects from data exfiltration and file warehousing.
+   * This is irreversible and must be restored manually, if necessary.
+
+
+4. Execute any forensic tooling via SSM.
+   * Capture running processes and system memory.
+
+
+5. Stop all running instances.
+   * Executes after ebs snapshot and ssm capture.
+   * Minimizes runtime charges.
+
+
+6. Report on Cloudtrail and Flowlogs status.
+   * If logs are available, print out location of logs.
+
+
+#### NOTE: This software will render your account unusable by anyone other than you. Please exec with care.
