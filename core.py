@@ -133,14 +133,15 @@ def unlock_nacls(ec2_client):
   helpers.save_logs(nacl_logs, 'NACL log: ')
 
 
-def unlock_iam(iam_client, account_id, policy_name, users, roles):
+def unlock_iam(iam_client, account_id, policy_name, users, roles, user_name):
   policy_logs = [ time.ctime() + ' Unlock IAM Users and Roles' ]
   for user in users:
     policy_logs.append(time.ctime() + ' ' + str(user))
-    try:
-      policy_logs.append(time.ctime() + ' ' + str(helpers.detach_user_policy(iam_client, user['UserName'], helpers.get_policy_arn(account_id, policy_name))))
-    except Exception as err:
-      policy_logs.append(time.ctime() + ' ' + str(err))
+    if user['UserName'] != user_name:
+      try:
+        policy_logs.append(time.ctime() + ' ' + str(helpers.detach_user_policy(iam_client, user['UserName'], helpers.get_policy_arn(account_id, policy_name))))
+      except Exception as err:
+        policy_logs.append(time.ctime() + ' ' + str(err))
   for role in roles:
     if helpers.check_aws_roles(role['RoleName']):
       policy_logs.append(time.ctime() + ' ' + str(role))

@@ -41,14 +41,14 @@ the account has been verified clear of intrusion.
 ### `python3 lockdown.py --lock`
 
 
-1. Cut off all network access to all subnets.
+1. Cut off all network access via NACLs.
    * NACLs are applied to prevent any and all traffic.
    * Security groups are left intact for forensics.
   
 
-2. Deactivate all IAM users and roles.
-   * Deny policy is attached to all users, groups and roles.
-   * Mitigates attacks such as persistant sts sessions, cross-account access, or cron'd Lambdas.
+2. Deactivate all users and roles via IAM policy.
+   * Explicit Deny policy is attached to all users and roles.
+   * Mitigates attacks such as persistant sts sessions, cross-account access, and cron'd Lambda.
    * Existing policies are left intact for forensics.
 
 

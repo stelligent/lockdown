@@ -40,7 +40,7 @@ def lockdown():
 
 def unlock():
   core.unlock_nacls(ec2_client)
-  core.unlock_iam(iam_client, account_id, policy_name, users, roles)
+  core.unlock_iam(iam_client, account_id, policy_name, users, roles, user_name)
 
 
 def main():
@@ -52,7 +52,7 @@ def main():
     if args.nacls and not args.iam:
       core.unlock_nacls(ec2_client)
     elif args.iam and not args.nacls:
-      core.unlock_iam(iam_client, account_id, policy_name, users, roles)
+      core.unlock_iam(iam_client, account_id, policy_name, users, roles, user_name)
     else:
       unlock()
 
