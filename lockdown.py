@@ -49,18 +49,18 @@ def main():
 
   ### Unlock account
   if args.unlock:
-    if args.nacls:
+    if args.nacls and not args.iam:
       core.unlock_nacls(ec2_client)
-    elif args.iam:
+    elif args.iam and not args.nacls:
       core.unlock_iam(iam_client, account_id, policy_name, users, roles)
     else:
       unlock()
 
   ### Lock account
   if args.lock:
-    if args.nacls:
+    if args.nacls and not args.iam:
       core.lockdown_nacls(ec2_client)
-    elif args.iam:
+    elif args.iam and not args.nacls:
       core.lockdown_iam(iam_client, account_id, policy_name, users, roles, user_name)
     else:
       lockdown()
